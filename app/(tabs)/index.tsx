@@ -53,6 +53,10 @@ const checkUlezCompliance = (vehicle: Vehicle): boolean => {
   return false;
 };
 
+const checkCongestionCompliance = (vehicle: Vehicle): boolean => {
+  return vehicle.fuelType === 'ELECTRIC';
+};
+
 const mockDvlaApiCall = (registration: string): Promise<Vehicle> => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -117,6 +121,8 @@ export default function HomeScreen() {
   }, []);
 
   const isCompliant = vehicle ? checkUlezCompliance(vehicle) : null;
+
+  const isCongestionCompliant = vehicle ? checkCongestionCompliance(vehicle) : null;
 
   const startTracking = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -208,6 +214,11 @@ export default function HomeScreen() {
                 {isCompliant ? '✅ ULEZ Compliant' : '❌ NOT ULEZ Compliant'}
               </Text>
             </View>
+            <View style={[styles.complianceBadge, isCongestionCompliant ? styles.compliant : styles.nonCompliant]}>
+              <Text style={styles.complianceText}>
+                {isCongestionCompliant ? '✅ Congestion Charge Exempt' : '❌ Congestion Charge Applies'}
+              </Text>
+          </View>
           </View>
         )}
       </View>
