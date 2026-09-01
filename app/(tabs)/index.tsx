@@ -1,6 +1,17 @@
 import * as Location from 'expo-location';
-import { useState } from 'react';
+import * as Notifications from 'expo-notifications';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 type Vehicle = {
   make: string;
@@ -64,6 +75,21 @@ const isInsideZone = (lat: number, lng: number, zone: typeof ZONES.ULEZ): boolea
   );
 };
 
+const sendZoneNotification = async (zoneName: string, charge: string, isCompliant: boolean | null) => {
+  if (zoneName === 'ULEZ' && isCompliant) return;
+
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: `⚠️ Entering ${zoneName}`,
+      body: isCompliant
+        ? `Your vehicle is exempt from the ${zoneName} charge.`
+        : `Daily charge of ${charge} applies. Pay at tfl.gov.uk before midnight.`,
+      sound: true,
+    },
+    trigger: null,
+  });
+};
+
 export default function HomeScreen() {
   const [registration, setRegistration] = useState('');
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
@@ -73,6 +99,22 @@ export default function HomeScreen() {
   const [locationError, setLocationError] = useState('');
   const [activeZones, setActiveZones] = useState<string[]>([]);
   const [tracking, setTracking] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+  const previousZonesRef = useRef<string[]>([]);
+  const vehicleRef = useRef<Vehicle | null>(null);
+
+  useEffect(() => {
+    vehicleRef.current = vehicle;
+  }, [vehicle]);
+
+  useEffect(() => {
+    const requestNotificationPermission = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      setNotificationsEnabled(status === 'granted');
+    };
+    requestNotificationPermission();
+  }, []);
 
   const isCompliant = vehicle ? checkUlezCompliance(vehicle) : null;
 
@@ -95,6 +137,18 @@ export default function HomeScreen() {
         const zonesEntered: string[] = [];
         if (isInsideZone(latitude, longitude, ZONES.ULEZ)) zonesEntered.push('ULEZ');
         if (isInsideZone(latitude, longitude, ZONES.CONGESTION)) zonesEntered.push('CONGESTION');
+
+        const previousZones = previousZonesRef.current;
+        zonesEntered.forEach((zone) => {
+          if (!previousZones.includes(zone)) {
+            const zoneData = zone === 'ULEZ' ? ZONES.ULEZ : ZONES.CONGESTION;
+            const currentVehicle = vehicleRef.current;
+            const compliant = currentVehicle ? checkUlezCompliance(currentVehicle) : null;
+            sendZoneNotification(zoneData.name, zoneData.dailyCharge, compliant);
+          }
+        });
+
+        previousZonesRef.current = zonesEntered;
         setActiveZones(zonesEntered);
       }
     );
@@ -119,6 +173,12 @@ export default function HomeScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>ZoneAlert</Text>
       <Text style={styles.subtitle}>UK Charging Zone Tracker</Text>
+
+      <View style={styles.notifBanner}>
+        <Text style={styles.notifText}>
+          {notificationsEnabled ? '🔔 Notifications enabled' : '🔕 Notifications disabled — check settings'}
+        </Text>
+      </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Your Vehicle</Text>
@@ -218,7 +278,19 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: '#aaa',
-    marginBottom: 32,
+    marginBottom: 16,
+  },
+  notifBanner: {
+    width: '100%',
+    backgroundColor: '#16213e',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  notifText: {
+    color: '#aaa',
+    fontSize: 13,
   },
   section: {
     width: '100%',
