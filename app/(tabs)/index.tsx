@@ -1,3 +1,4 @@
+import { useAppTheme } from '@/contexts/AppThemeContext';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef, useState } from 'react';
@@ -95,6 +96,8 @@ const sendZoneNotification = async (zoneName: string, charge: string, isComplian
 };
 
 export default function HomeScreen() {
+  const { colors, mode } = useAppTheme();
+
   const [registration, setRegistration] = useState('');
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(false);
@@ -121,7 +124,6 @@ export default function HomeScreen() {
   }, []);
 
   const isCompliant = vehicle ? checkUlezCompliance(vehicle) : null;
-
   const isCongestionCompliant = vehicle ? checkCongestionCompliance(vehicle) : null;
 
   const startTracking = async () => {
@@ -176,76 +178,78 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>ZoneAlert</Text>
-      <Text style={styles.subtitle}>UK Charging Zone Tracker</Text>
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.accent }]}>ZoneAlert</Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>UK Charging Zone Tracker</Text>
 
-      <View style={styles.notifBanner}>
-        <Text style={styles.notifText}>
+      <View style={[styles.notifBanner, { backgroundColor: colors.card }]}>
+        <Text style={[styles.notifText, { color: colors.textSecondary }]}>
           {notificationsEnabled ? '🔔 Notifications enabled' : '🔕 Notifications disabled — check settings'}
         </Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Your Vehicle</Text>
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Vehicle</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.accent }]}
           placeholder="e.g. AB12 CDE"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.textMuted}
           value={registration}
           onChangeText={setRegistration}
           autoCapitalize="characters"
         />
-        <TouchableOpacity style={styles.button} onPress={handleCheck}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: colors.accent }]} onPress={handleCheck}>
           <Text style={styles.buttonText}>Check Vehicle</Text>
         </TouchableOpacity>
 
-        {loading && <ActivityIndicator size="large" color="#e94560" style={{ marginTop: 20 }} />}
-        {error !== '' && <Text style={styles.errorText}>{error}</Text>}
+        {loading && <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 20 }} />}
+        {error !== '' && <Text style={[styles.errorText, { color: colors.accent }]}>{error}</Text>}
 
         {vehicle && (
-          <View style={styles.resultCard}>
-            <Text style={styles.vehicleName}>{vehicle.make} {vehicle.model}</Text>
-            <Text style={styles.vehicleDetail}>Year: {vehicle.year}</Text>
-            <Text style={styles.vehicleDetail}>Fuel: {vehicle.fuelType}</Text>
-            <Text style={styles.vehicleDetail}>Euro Status: {vehicle.euroStatus ?? 'N/A'}</Text>
-            <View style={[styles.complianceBadge, isCompliant ? styles.compliant : styles.nonCompliant]}>
+          <View style={[styles.resultCard, { backgroundColor: colors.background }]}>
+            <Text style={[styles.vehicleName, { color: colors.text }]}>{vehicle.make} {vehicle.model}</Text>
+            <Text style={[styles.vehicleDetail, { color: colors.textSecondary }]}>Year: {vehicle.year}</Text>
+            <Text style={[styles.vehicleDetail, { color: colors.textSecondary }]}>Fuel: {vehicle.fuelType}</Text>
+            <Text style={[styles.vehicleDetail, { color: colors.textSecondary }]}>Euro Status: {vehicle.euroStatus ?? 'N/A'}</Text>
+
+            <View style={[styles.complianceBadge, { backgroundColor: isCompliant ? '#1a4731' : '#4a1a1a' }]}>
               <Text style={styles.complianceText}>
                 {isCompliant ? '✅ ULEZ Compliant' : '❌ NOT ULEZ Compliant'}
               </Text>
             </View>
-            <View style={[styles.complianceBadge, isCongestionCompliant ? styles.compliant : styles.nonCompliant]}>
+
+            <View style={[styles.complianceBadge, { backgroundColor: isCongestionCompliant ? '#1a4731' : '#4a1a1a' }]}>
               <Text style={styles.complianceText}>
                 {isCongestionCompliant ? '✅ Congestion Charge Exempt' : '❌ Congestion Charge Applies'}
               </Text>
-          </View>
+            </View>
           </View>
         )}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Live Zone Tracking</Text>
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Live Zone Tracking</Text>
 
         {!tracking ? (
-          <TouchableOpacity style={styles.trackButton} onPress={startTracking}>
-            <Text style={styles.buttonText}>📍 Start Tracking</Text>
+          <TouchableOpacity style={[styles.trackButton, { backgroundColor: colors.cardAlt, borderColor: colors.accentAlt }]} onPress={startTracking}>
+            <Text style={[styles.buttonText, { color: mode === 'light' ? '#000000' : '#ffffff' }]}>📍 Start Tracking</Text>
           </TouchableOpacity>
         ) : (
-          <View style={styles.trackingActive}>
-            <Text style={styles.trackingText}>🟢 Tracking Active</Text>
+          <View style={[styles.trackingActive, { backgroundColor: colors.cardAlt }]}>
+            <Text style={[styles.trackingText, { color: colors.accentAlt }]}>🟢 Tracking Active</Text>
             {location && (
-              <Text style={styles.coordText}>
+              <Text style={[styles.coordText, { color: colors.textSecondary }]}>
                 Lat: {location.coords.latitude.toFixed(4)} | Lng: {location.coords.longitude.toFixed(4)}
               </Text>
             )}
           </View>
         )}
 
-        {locationError !== '' && <Text style={styles.errorText}>{locationError}</Text>}
+        {locationError !== '' && <Text style={[styles.errorText, { color: colors.accent }]}>{locationError}</Text>}
 
         {tracking && (
           <View style={styles.zoneStatus}>
-            <View style={[styles.zonePill, activeZones.includes('ULEZ') ? styles.zoneActive : styles.zoneInactive]}>
+            <View style={[styles.zonePill, { backgroundColor: activeZones.includes('ULEZ') ? '#4a1a1a' : '#1a3a2a', borderColor: activeZones.includes('ULEZ') ? colors.accent : colors.accentAlt }]}>
               <Text style={styles.zoneText}>
                 {activeZones.includes('ULEZ') ? '⚠️ Inside ULEZ' : '✅ Outside ULEZ'}
               </Text>
@@ -257,7 +261,7 @@ export default function HomeScreen() {
               )}
             </View>
 
-            <View style={[styles.zonePill, activeZones.includes('CONGESTION') ? styles.zoneActive : styles.zoneInactive]}>
+            <View style={[styles.zonePill, { backgroundColor: activeZones.includes('CONGESTION') ? '#4a1a1a' : '#1a3a2a', borderColor: activeZones.includes('CONGESTION') ? colors.accent : colors.accentAlt }]}>
               <Text style={styles.zoneText}>
                 {activeZones.includes('CONGESTION') ? '⚠️ Inside Congestion Zone' : '✅ Outside Congestion Zone'}
               </Text>
@@ -275,7 +279,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#1a1a2e',
     alignItems: 'center',
     padding: 24,
     paddingTop: 60,
@@ -283,29 +286,24 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#e94560',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: '#aaa',
     marginBottom: 16,
   },
   notifBanner: {
     width: '100%',
-    backgroundColor: '#16213e',
     padding: 10,
     borderRadius: 8,
     marginBottom: 20,
     alignItems: 'center',
   },
   notifText: {
-    color: '#aaa',
     fontSize: 13,
   },
   section: {
     width: '100%',
-    backgroundColor: '#16213e',
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
@@ -313,37 +311,30 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 16,
   },
   input: {
     width: '100%',
-    backgroundColor: '#1a1a2e',
-    color: '#fff',
     fontSize: 18,
     padding: 16,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e94560',
     marginBottom: 12,
     textAlign: 'center',
     letterSpacing: 2,
   },
   button: {
-    backgroundColor: '#e94560',
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 10,
     alignItems: 'center',
   },
   trackButton: {
-    backgroundColor: '#0f3460',
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#4ecca3',
   },
   buttonText: {
     color: '#fff',
@@ -353,18 +344,15 @@ const styles = StyleSheet.create({
   resultCard: {
     marginTop: 16,
     padding: 16,
-    backgroundColor: '#1a1a2e',
     borderRadius: 10,
   },
   vehicleName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 8,
   },
   vehicleDetail: {
     fontSize: 14,
-    color: '#aaa',
     marginBottom: 4,
   },
   complianceBadge: {
@@ -372,12 +360,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     alignItems: 'center',
-  },
-  compliant: {
-    backgroundColor: '#1a4731',
-  },
-  nonCompliant: {
-    backgroundColor: '#4a1a1a',
   },
   complianceText: {
     fontSize: 15,
@@ -387,16 +369,13 @@ const styles = StyleSheet.create({
   trackingActive: {
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#0f3460',
     borderRadius: 10,
   },
   trackingText: {
-    color: '#4ecca3',
     fontSize: 16,
     fontWeight: 'bold',
   },
   coordText: {
-    color: '#aaa',
     fontSize: 12,
     marginTop: 6,
   },
@@ -408,16 +387,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
-  },
-  zoneActive: {
-    backgroundColor: '#4a1a1a',
     borderWidth: 1,
-    borderColor: '#e94560',
-  },
-  zoneInactive: {
-    backgroundColor: '#1a3a2a',
-    borderWidth: 1,
-    borderColor: '#4ecca3',
   },
   zoneText: {
     color: '#fff',
@@ -430,7 +400,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   errorText: {
-    color: '#e94560',
     fontSize: 14,
     marginTop: 8,
     textAlign: 'center',
